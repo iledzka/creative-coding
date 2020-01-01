@@ -50,16 +50,21 @@ const sketch = ({ context }) => {
 
   // Randomize mesh attributes
   const randomizeMesh = (mesh) => {
-
     const gridSize = random.rangeFloor(3, 11);
-
-    // Choose a random point in a 3D volume between -1..1
+    // Choose a random grid point in a 3D volume between -1..1
     const point = new THREE.Vector3(
-       grid(random.value(), gridSize),
+      grid(random.value(), gridSize),
       grid(random.value(), gridSize),
       grid(random.value(), gridSize)
     );
-    
+
+    // Stretch it vertically
+    point.y *= 1.5;
+    // Scale all the points closer together
+    point.multiplyScalar(0.5);
+    point.y -= 0.65;
+
+    // Save position
     mesh.position.copy(point);
     mesh.originalPosition = mesh.position.clone();
 
@@ -81,6 +86,9 @@ const sketch = ({ context }) => {
     // Further scale each object
     mesh.scale.multiplyScalar(random.gaussian() * 0.25);
 
+    // Store the scale
+    mesh.originalScale = mesh.scale.clone();
+
     // Set some time properties on each mesh
     mesh.time = 0;
     mesh.duration = random.range(1, 4);
@@ -90,7 +98,7 @@ const sketch = ({ context }) => {
   const container = new THREE.Group();
 
   // The # of cubes to create
-  const chunks = 50;
+  const chunks = 6;
 
   // Create each cube and return a THREE.Mesh
   const meshes = Array.from(new Array(chunks)).map(() => {
@@ -149,7 +157,7 @@ const sketch = ({ context }) => {
       camera.updateProjectionMatrix();
     },
     // Update & render your scene here
-    render({ time, deltaTime }) {
+    render ({ time, deltaTime }) {
       // Animate each mesh with noise
       meshes.forEach(mesh => {
         // Each mesh has its own time that increases each frame
