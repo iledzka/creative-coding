@@ -41,14 +41,25 @@ const sketch = ({ context }) => {
   // Setup a geometry
   const geometry = new THREE.SphereGeometry(1, 14, 7);
 
+  // Snap 0..1 point to a -1..1 grid
+  const grid = (n, gridSize) => {
+    const max = gridSize - 1;
+    const snapped = Math.round(n * max) / max;
+    return snapped * 2 - 1;
+  };
+
   // Randomize mesh attributes
   const randomizeMesh = (mesh) => {
+
+    const gridSize = random.rangeFloor(3, 11);
+
     // Choose a random point in a 3D volume between -1..1
     const point = new THREE.Vector3(
-      random.value() * 2 - 1,
-      random.value() * 2 - 1,
-      random.value() * 2 - 1
+       grid(random.value(), gridSize),
+      grid(random.value(), gridSize),
+      grid(random.value(), gridSize)
     );
+    
     mesh.position.copy(point);
     mesh.originalPosition = mesh.position.clone();
 
@@ -69,6 +80,10 @@ const sketch = ({ context }) => {
 
     // Further scale each object
     mesh.scale.multiplyScalar(random.gaussian() * 0.25);
+
+    // Set some time properties on each mesh
+    mesh.time = 0;
+    mesh.duration = random.range(1, 4);
   };
 
   // A group that will hold all of our cubes
@@ -92,6 +107,9 @@ const sketch = ({ context }) => {
 
     // Randomize it
     randomizeMesh(mesh);
+
+    // Set an initially random time
+    mesh.time = random.range(0, mesh.duration);
 
     return mesh;
   });
@@ -131,14 +149,39 @@ const sketch = ({ context }) => {
       camera.updateProjectionMatrix();
     },
     // Update & render your scene here
-    render({ time }) {
-      controls.update();
-     
+    render({ time, deltaTime }) {
+      // Animate each mesh with noise
+      meshes.forEach(mesh => {
+        // Each mesh has its own time that increases each frame
+        mesh.time += deltaTime;
+
+        // If it hits the end of its life, reset it
+        if (mesh.time > mesh.duration) {
+          randomizeMesh(mesh);
+        }
+
+        // Scale meshes in and out
+        mesh.scale.copy(mesh.originalScale);
+        mesh.scale.multiplyScalar(Math.sin(mesh.time / mesh.duration * Math.PI));
+
+        // Move meshes up
+        mesh.position.y += deltaTime * 0.5;
+
+        // Add slight movement
+        const f = 0.5;
+        mesh.scale.y = mesh.originalScale.y + 0.25 * random.noise3D(
+          mesh.originalPosition.x * f,
+          mesh.originalPosition.y * f,
+          mesh.originalPosition.z * f,
+          time * 0.25
+        );
+      });
+
+      // Draw scene with our camera
       renderer.render(scene, camera);
     },
     // Dispose of events & renderer for cleaner hot-reloading
     unload() {
-      controls.dispose();
       renderer.dispose();
     }
   };
