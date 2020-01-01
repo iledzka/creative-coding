@@ -1,5 +1,6 @@
 // Ensure ThreeJS is in global scope for the 'examples/'
 global.THREE = require("three");
+const random = require('canvas-sketch-util/random');
 
 // Include any additional ThreeJS examples below
 require("three/examples/js/controls/OrbitControls");
@@ -56,9 +57,6 @@ const sketch = ({ context }) => {
     mesh.position.copy(point);
     mesh.originalPosition = mesh.position.clone();
 
-    // Choose a color for the mesh material
-    mesh.material.color.set(random.pick(palette));
-
     // Randomly scale each axis
     mesh.scale.set(
       random.gaussian(),
@@ -81,10 +79,24 @@ const sketch = ({ context }) => {
   // The # of cubes to create
   const chunks = 50;
 
-  // Smaller cube
-  mesh.scale.setScalar(0.5);
+  // Create each cube and return a THREE.Mesh
+  const meshes = Array.from(new Array(chunks)).map(() => {
+    
 
-  scene.add(mesh);
+    // Create the mesh
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Randomize it
+    randomizeMesh(mesh);
+
+    return mesh;
+  });
+
+  // Add meshes to the group
+  meshes.forEach(m => container.add(m));
+
+  // Then add the group to the scene
+  scene.add(container);
 
   // draw each frame
   return {
