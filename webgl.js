@@ -1,6 +1,7 @@
 // Ensure ThreeJS is in global scope for the 'examples/'
 global.THREE = require("three");
 const random = require('canvas-sketch-util/random');
+const palettes = require('nice-color-palettes');
 
 // Include any additional ThreeJS examples below
 require("three/examples/js/controls/OrbitControls");
@@ -34,17 +35,11 @@ const sketch = ({ context }) => {
   // Setup your scene
   const scene = new THREE.Scene();
 
+   // Get a palette for our scene
+   const palette = random.pick(palettes);
+
   // Setup a geometry
   const geometry = new THREE.SphereGeometry(1, 14, 7);
-
-  // Setup a material
-  const material = new THREE.MeshNormalMaterial({
-    color: "red",
-    wireframe: true
-  });
-
-  // Setup a mesh with geometry + material
-  const mesh = new THREE.Mesh(geometry, material);
 
   // Randomize mesh attributes
   const randomizeMesh = (mesh) => {
@@ -56,6 +51,9 @@ const sketch = ({ context }) => {
     );
     mesh.position.copy(point);
     mesh.originalPosition = mesh.position.clone();
+
+    // Choose a color for the mesh material
+    mesh.material.color.set(random.pick(palette));
 
     // Randomly scale each axis
     mesh.scale.set(
@@ -81,9 +79,15 @@ const sketch = ({ context }) => {
 
   // Create each cube and return a THREE.Mesh
   const meshes = Array.from(new Array(chunks)).map(() => {
-    
 
-    // Create the mesh
+    const material = new THREE.MeshStandardMaterial({
+      metalness: 0,
+      roughness: 1,
+      color: random.pick(palette)
+    });
+
+
+    // Create and Setup a mesh with geometry + material
     const mesh = new THREE.Mesh(geometry, material);
 
     // Randomize it
@@ -97,6 +101,11 @@ const sketch = ({ context }) => {
 
   // Then add the group to the scene
   scene.add(container);
+
+  // Add a harsh light to the scene
+  const light = new THREE.DirectionalLight('white', 1);
+  light.position.set(0, 3, 8);
+  scene.add(light);
 
   // draw each frame
   return {
@@ -124,8 +133,7 @@ const sketch = ({ context }) => {
     // Update & render your scene here
     render({ time }) {
       controls.update();
-      mesh.rotation.y = time * 0.25;
-      mesh.rotation.z = time * 0.5;
+     
       renderer.render(scene, camera);
     },
     // Dispose of events & renderer for cleaner hot-reloading
